@@ -15,7 +15,7 @@ export type SourceRecord = {
 
 type DatasetRow = { rule: string; title: string; part: string; page_start: number; page_end: number; text: string };
 
-const dataPath = path.join(process.cwd(), "resources and data", "bhumi_vikas_rules.jsonl");
+const dataPath = path.join(/* turbopackIgnore: true */ process.cwd(), "resources and data", "bhumi_vikas_rules.jsonl");
 const sourceTitle = "M.P. Bhumi Vikas Rules, 2012 — consolidated to 6 March 2025";
 
 function cleanText(text: string) {

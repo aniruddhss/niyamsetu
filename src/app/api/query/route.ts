@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   const language = body.language === "hi" ? "hi" : "en";
   const templateId = ["setback", "floors", "fees"].includes(body.templateId) ? body.templateId : undefined;
   const localRecords = query ? searchSources(query, templateId) : [];
-  const remoteRecords = query ? await searchSupabaseSources(query) : [];
+  const remoteRecords = query ? await searchSupabaseSources(query).catch(() => []) : [];
   const records = remoteRecords.length ? remoteRecords : localRecords;
   const bilingual = language === "hi";
   const status = records.length ? "supported" : "not-found";

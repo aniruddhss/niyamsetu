@@ -339,7 +339,15 @@ export default function Home() {
   const [language, setLanguage] = useState<Language>("en");
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<Result | null>(null);
-  const [history, setHistory] = useState<Result[]>([]);
+  const [history, setHistory] = useState<Result[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = JSON.parse(sessionStorage.getItem(HISTORY_KEY) || "[]");
+      return Array.isArray(stored) ? stored : [];
+    } catch {
+      return [];
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -356,18 +364,6 @@ export default function Home() {
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const t = copy[language];
-
-  // Load history from session storage on mount
-  useEffect(() => {
-    try {
-      const stored = JSON.parse(sessionStorage.getItem(HISTORY_KEY) || "[]");
-      if (Array.isArray(stored)) {
-        setHistory(stored);
-      }
-    } catch {
-      setHistory([]);
-    }
-  }, []);
 
   // Auto-resize textarea as user types
   useEffect(() => {
@@ -413,7 +409,7 @@ export default function Home() {
       const updatedHistory = [data, ...history.filter((item) => item.id !== data.id)].slice(0, 15);
       setHistory(updatedHistory);
       sessionStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
-    } catch (err) {
+    } catch {
       showToast(language === "hi" ? "त्रुटि: उत्तर प्राप्त नहीं हो सका" : "Unable to retrieve rule. Please try again.");
     } finally {
       setLoading(false);
