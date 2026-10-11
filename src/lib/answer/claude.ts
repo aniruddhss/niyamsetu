@@ -12,7 +12,10 @@ export async function generateClaudeAnswer(query: string, language: "en" | "hi",
   try {
     const response = await client.messages.create({
       model,
-      max_tokens: 500,
+      // Answers are summaries of supplied evidence; thinking roughly doubles latency without helping.
+      max_tokens: 2000,
+      thinking: { type: "disabled" },
+      output_config: { effort: "low" },
       system: "You answer municipal building-rule questions. Use only the supplied evidence. Never invent numbers, formulas, legal requirements, citations, or current-law claims. If the evidence is insufficient, say so. Do not make an official decision or give legal advice. Keep the answer concise. Do not add markdown citations; the application attaches trusted citations separately.",
       messages: [{ role: "user", content: `Answer in ${language === "hi" ? "Hindi" : "English"}.\nQuestion: ${query}\n\nRetrieved evidence:\n${evidenceText}` }],
     });

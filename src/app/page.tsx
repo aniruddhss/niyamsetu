@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FRONT_RULE, REAR_RULE, type SitePlanResult } from "@/lib/site-plan/setbacks";
+import { renderSitePlanSvg } from "@/lib/site-plan/svg";
 
 type Language = "en" | "hi";
 type Status = "supported" | "not-found";
@@ -20,6 +22,7 @@ type Result = {
   status: Status;
   citations: Citation[];
   limitations: string[];
+  sitePlan?: SitePlanResult | null;
   createdAt: string;
 };
 type Template = { id: string; label: string; query: string };
@@ -50,6 +53,18 @@ const copy = {
     disclaimer: "Reference aid only. Verify applicability before making an official decision.",
     page: "Page",
     notice: "This is a reference aid, not a statement of current law. Confirm the applicable version.",
+    sitePlan: "Site plan",
+    downloadSvg: "Download SVG",
+    planCaption: "Schematic, drawn from the computed setbacks; plot assumed square. Side open spaces (Rule 56(3)) not drawn.",
+    figures: "Computed open spaces",
+    inputs: "Read from your question",
+    front: "Front open space",
+    rear: "Rear open space",
+    plotArea: "Plot area",
+    roadWidth: "Road width",
+    height: "Building height",
+    notGiven: "not given",
+    nil: "Nil",
   },
   hi: {
     title: "भूमि विकास सहायक",
@@ -73,6 +88,18 @@ const copy = {
     disclaimer: "केवल संदर्भ सहायता। आधिकारिक निर्णय से पहले लागू नियम सत्यापित करें।",
     page: "पृष्ठ",
     notice: "यह वर्तमान कानून का दावा नहीं है। लागू संस्करण की पुष्टि करें।",
+    sitePlan: "साइट प्लान",
+    downloadSvg: "SVG डाउनलोड करें",
+    planCaption: "सांकेतिक चित्र, नाप के अनुसार नहीं। साइड की खाली जगह (नियम 56(3)) नहीं दिखाई गई।",
+    figures: "गणना की गई खुली जगह",
+    inputs: "आपके प्रश्न से लिया गया",
+    front: "सामने की खुली जगह",
+    rear: "पीछे की खुली जगह",
+    plotArea: "प्लॉट क्षेत्रफल",
+    roadWidth: "सड़क की चौड़ाई",
+    height: "भवन की ऊंचाई",
+    notGiven: "नहीं दिया गया",
+    nil: "शून्य",
   },
 } as const;
 
@@ -113,6 +140,10 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [templateId, setTemplateId] = useState<string | undefined>(undefined);
   const t = copy[language];
+  const planRef = useRef<HTMLDivElement>(null);
+  const sitePlan = result?.sitePlan ?? null;
+  const planSvg = useMemo(() => (sitePlan ? renderSitePlanSvg(sitePlan) : null), [sitePlan]);
+  const showPlan = Boolean(sitePlan && (planSvg || sitePlan.note));
 
   useEffect(() => {
     let stored: Result[] = [];
@@ -179,7 +210,13 @@ export default function Home() {
       )
       .join("");
     const limitations = result.limitations.map(escapeHtml).join("<br>") || "—";
-    return `<!doctype html><html lang="${language}"><meta charset="utf-8"><title>${escapeHtml(t.title)}</title><style>body{font:16px "Nirmala UI",Arial,sans-serif;max-width:760px;margin:40px auto;line-height:1.55;color:#111}blockquote{border-left:3px solid #999;padding:4px 14px;margin:10px 0;color:#333;white-space:pre-line}small{color:#666}</style><h1>${escapeHtml(t.title)}</h1><small>${escapeHtml(new Date(result.createdAt).toLocaleString())} · ${escapeHtml(SOURCE_NOTE)}</small><h2>${escapeHtml(result.question)}</h2><h3>${t.summary}</h3><p>${escapeHtml(result.answer)}</p><p><strong>${result.status === "supported" ? t.supported : t.notFound}</strong></p><h2>${t.evidence}</h2>${sources}<h2>${t.limitations}</h2><p>${limitations}</p><p><small>${escapeHtml(t.disclaimer)}</small></p></html>`;
+    return `<!doctype html><html lang="${language}"><meta charset="utf-8"><title>${escapeHtml(t.title)}</title><style>body{font:16px "Nirmala UI",Arial,sans-serif;max-width:760px;margin:40px auto;line-height:1.55;color:#111}blockquote{border-left:3px solid #999;padding:4px 14px;margin:10px 0;color:#333;white-space:pre-line}small{color:#666}</style><h1>${escapeHtml(t.title)}</h1><small>${escapeHtml(new Date(result.createdAt).toLocaleString())} · ${escapeHtml(SOURCE_NOTE)}</small><h2>${escapeHtml(result.question)}</h2><h3>${t.summary}</h3><p>${escapeHtml(result.answer)}</p><p><strong>${result.status === "supported" ? t.supported : t.notFound}</strong></p>${planSvg ? `<h2>${t.sitePlan}</h2>${planSvg}<p><small>${escapeHtml(t.planCaption)}</small></p>` : ""}<h2>${t.evidence}</h2>${sources}<h2>${t.limitations}</h2><p>${limitations}</p><p><small>${escapeHtml(t.disclaimer)}</small></p></html>`;
+  }
+
+  function downloadSvg() {
+    const svg = planRef.current?.querySelector("svg");
+    if (!svg) return;
+    saveBlob(svg.outerHTML, "image/svg+xml", "site-plan.svg");
   }
 
   function downloadReport() {
@@ -198,7 +235,7 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-8 px-5 py-10 text-neutral-900">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-5 py-10 text-neutral-900">
       <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
@@ -291,7 +328,10 @@ export default function Home() {
       </div>
 
       {result && (
-        <section className="flex flex-col gap-6 border-t border-neutral-200 pt-6">
+        <section
+          className={`grid items-start gap-6 border-t border-neutral-200 pt-6 ${showPlan ? "min-[860px]:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]" : ""}`}
+        >
+          <div className="flex min-w-0 flex-col gap-6">
           <div>
             <p className="text-sm text-neutral-500">{result.question}</p>
             <h2 className="mt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">{t.summary}</h2>
@@ -300,6 +340,38 @@ export default function Home() {
               {result.status === "supported" ? t.supported : t.notFound}
             </p>
           </div>
+
+          {sitePlan && showPlan && (
+            <div className="flex flex-col gap-4">
+              {(sitePlan.frontM !== null || sitePlan.rearM !== null) && (
+                <div>
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t.figures}</h2>
+                  <div className="mt-2 grid grid-cols-2 gap-3">
+                    {sitePlan.frontM !== null && (
+                      <FigureTile label={t.front} value={`${sitePlan.frontM} m`} rule={FRONT_RULE} />
+                    )}
+                    {sitePlan.rearM !== null && (
+                      <FigureTile label={t.rear} value={sitePlan.rearM === 0 ? t.nil : `${sitePlan.rearM} m`} rule={REAR_RULE} />
+                    )}
+                  </div>
+                </div>
+              )}
+              {sitePlan.note && (
+                <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{sitePlan.note}</p>
+              )}
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t.inputs}</h2>
+                <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                  <dt className="text-neutral-500">{t.plotArea}</dt>
+                  <dd>{sitePlan.plotAreaSqm !== null ? `${sitePlan.plotAreaSqm} sq m` : t.notGiven}</dd>
+                  <dt className="text-neutral-500">{t.roadWidth}</dt>
+                  <dd>{sitePlan.roadWidthM !== null ? `${sitePlan.roadWidthM} m` : t.notGiven}</dd>
+                  <dt className="text-neutral-500">{t.height}</dt>
+                  <dd>{sitePlan.heightM !== null ? `${sitePlan.heightM} m` : t.notGiven}</dd>
+                </dl>
+              </div>
+            </div>
+          )}
 
           {result.citations.length > 0 && (
             <div className="flex flex-col gap-3">
@@ -344,6 +416,25 @@ export default function Home() {
             </button>
           </div>
           <p className="text-xs text-neutral-500">{t.disclaimer}</p>
+          </div>
+
+          {showPlan && (
+            <aside className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4 min-[860px]:sticky min-[860px]:top-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">{t.sitePlan}</h2>
+              {planSvg ? (
+                <>
+                  {/* SVG comes from the pure renderSitePlanSvg; all text inside it is escaped. */}
+                  <div ref={planRef} className="[&_svg]:h-auto [&_svg]:w-full" dangerouslySetInnerHTML={{ __html: planSvg }} />
+                  <p className="text-xs text-neutral-600">{t.planCaption}</p>
+                  <button type="button" onClick={downloadSvg} className="self-start rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100">
+                    {t.downloadSvg}
+                  </button>
+                </>
+              ) : (
+                <p className="text-sm text-neutral-700">{sitePlan?.note}</p>
+              )}
+            </aside>
+          )}
         </section>
       )}
 
@@ -365,6 +456,16 @@ export default function Home() {
 
       <footer className="mt-auto border-t border-neutral-200 pt-4 text-xs text-neutral-500">{SOURCE_NOTE}</footer>
     </main>
+  );
+}
+
+function FigureTile({ label, value, rule }: { label: string; value: string; rule: string }) {
+  return (
+    <div className="rounded-md border border-neutral-200 bg-white p-3">
+      <p className="text-xs text-neutral-500">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tracking-tight text-neutral-900">{value}</p>
+      <p className="mt-1 text-xs text-neutral-600">{rule}</p>
+    </div>
   );
 }
 
