@@ -4,12 +4,21 @@ import { generateClaudeAnswer } from "@/lib/answer/claude";
 import { computeSitePlan, extractSitePlanInputs } from "@/lib/site-plan/setbacks";
 
 export async function POST(request: Request) {
+  try {
+    return await handleQuery(request);
+  } catch (error) {
+    console.error("Query handler failed.", error instanceof Error ? error.name : "unknown");
+    return Response.json({ error: "Query failed. Please try again." }, { status: 500 });
+  }
+}
+
+async function handleQuery(request: Request) {
   const body = await request.json().catch(() => ({}));
   const query = typeof body.query === "string" ? body.query.trim().slice(0, 1000) : "";
   const language = body.language === "hi" ? "hi" : "en";
   const templateId = ["setback", "floors", "fees"].includes(body.templateId) ? body.templateId : undefined;
   const localRecords = query ? searchSources(query, templateId) : [];
-  const remoteRecords = query ? await searchSupabaseSources(query) : [];
+  const remoteRecords = query ? await searchSupabaseSources(query).catch(() => []) : [];
   const records = remoteRecords.length ? remoteRecords : localRecords;
   const bilingual = language === "hi";
   // Deterministic Rule 56 figures for the site plan; independent of retrieval and the LLM.

@@ -28,8 +28,9 @@ function cleanText(text: string) {
 }
 
 function loadRecords(): SourceRecord[] {
-  if (!fs.existsSync(dataPath)) return [];
-  return fs.readFileSync(dataPath, "utf8").split("\n").filter(Boolean).map((line) => {
+  try {
+    if (!fs.existsSync(dataPath)) return [];
+    return fs.readFileSync(dataPath, "utf8").split("\n").filter(Boolean).map((line) => {
     const row = JSON.parse(line) as DatasetRow;
     return {
       id: `mpbvr-rule-${row.rule.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
@@ -42,7 +43,11 @@ function loadRecords(): SourceRecord[] {
       sourceLanguage: "en",
       sourceTitle,
     };
-  });
+    });
+  } catch (error) {
+    console.error("Source dataset failed to load.", error instanceof Error ? error.name : "unknown");
+    return [];
+  }
 }
 
 export const sourceRecords = loadRecords();

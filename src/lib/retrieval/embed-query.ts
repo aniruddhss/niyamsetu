@@ -26,6 +26,7 @@ export function getExtractor(): Promise<Extractor> {
 }
 
 export async function embedQuery(text: string): Promise<number[] | null> {
+  if (process.env.EMBEDDING_ENABLED !== "true") return null;
   try {
     const extractor = await getExtractor();
     const output = await extractor(QUERY_PREFIX + text, { pooling: "mean", normalize: true });
