@@ -2,20 +2,32 @@
   "name": "niyamsetu",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify:data": "node scripts/verify-rules.mjs",
+    "ingest:data": "node scripts/ingest-rules.mjs",
+    "embed:data": "node scripts/embed-chunks.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
+    "@huggingface/transformers": "^4.3.1",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.109.0",
     "next": "16.4.0",
+    "pg": "^8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

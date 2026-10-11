@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  serverExternalPackages: ["@huggingface/transformers", "onnxruntime-node", "sharp"],
   turbopack: {
     rules: {
       "*.css": {
