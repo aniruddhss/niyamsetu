@@ -15,7 +15,7 @@ export type SourceRecord = {
 
 type DatasetRow = { rule: string; title: string; part: string; page_start: number; page_end: number; text: string };
 
-const dataPath = path.join(/* turbopackIgnore: true */ process.cwd(), "resources and data", "bhumi_vikas_rules.jsonl");
+const dataPath = path.join(process.cwd(), "resources and data", "bhumi_vikas_rules.jsonl");
 const sourceTitle = "M.P. Bhumi Vikas Rules, 2012 — consolidated to 6 March 2025";
 
 function cleanText(text: string) {
@@ -28,8 +28,9 @@ function cleanText(text: string) {
 }
 
 function loadRecords(): SourceRecord[] {
-  if (!fs.existsSync(dataPath)) return [];
-  return fs.readFileSync(dataPath, "utf8").split("\n").filter(Boolean).map((line) => {
+  try {
+    if (!fs.existsSync(dataPath)) return [];
+    return fs.readFileSync(dataPath, "utf8").split("\n").filter(Boolean).map((line) => {
     const row = JSON.parse(line) as DatasetRow;
     return {
       id: `mpbvr-rule-${row.rule.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
@@ -42,7 +43,11 @@ function loadRecords(): SourceRecord[] {
       sourceLanguage: "en",
       sourceTitle,
     };
-  });
+    });
+  } catch (error) {
+    console.error("Source dataset failed to load.", error instanceof Error ? error.name : "unknown");
+    return [];
+  }
 }
 
 export const sourceRecords = loadRecords();

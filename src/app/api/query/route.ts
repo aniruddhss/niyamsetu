@@ -3,6 +3,15 @@ import { searchSupabaseSources } from "@/lib/retrieval/supabase-search";
 import { generateClaudeAnswer } from "@/lib/answer/claude";
 
 export async function POST(request: Request) {
+  try {
+    return await handleQuery(request);
+  } catch (error) {
+    console.error("Query handler failed.", error instanceof Error ? error.name : "unknown");
+    return Response.json({ error: "Query failed. Please try again." }, { status: 500 });
+  }
+}
+
+async function handleQuery(request: Request) {
   const body = await request.json().catch(() => ({}));
   const query = typeof body.query === "string" ? body.query.trim().slice(0, 1000) : "";
   const language = body.language === "hi" ? "hi" : "en";
