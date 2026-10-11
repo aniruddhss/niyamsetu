@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --experimental-strip-types --no-warnings --test tests/site-plan.test.mjs",
     "verify:data": "node scripts/verify-rules.mjs",
     "ingest:data": "node scripts/ingest-rules.mjs",
     "embed:data": "node scripts/embed-chunks.mjs"

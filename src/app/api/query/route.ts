@@ -1,6 +1,7 @@
 import { searchSources } from "@/lib/source-data";
 import { searchSupabaseSources } from "@/lib/retrieval/supabase-search";
 import { generateClaudeAnswer } from "@/lib/answer/claude";
+import { computeSitePlan, extractSitePlanInputs } from "@/lib/site-plan/setbacks";
 
 export async function POST(request: Request) {
   try {
@@ -20,6 +21,8 @@ async function handleQuery(request: Request) {
   const remoteRecords = query ? await searchSupabaseSources(query).catch(() => []) : [];
   const records = remoteRecords.length ? remoteRecords : localRecords;
   const bilingual = language === "hi";
+  // Deterministic Rule 56 figures for the site plan; independent of retrieval and the LLM.
+  const sitePlan = query ? computeSitePlan(extractSitePlanInputs(query)) : null;
   const status = records.length ? "supported" : "not-found";
   const generatedAnswer = records.length ? await generateClaudeAnswer(query, language, records) : null;
   const answer = generatedAnswer || (records.length
@@ -40,6 +43,7 @@ async function handleQuery(request: Request) {
         ? ["स्रोत पाठ अंग्रेज़ी PDF से लिया गया है; हिन्दी PDF उपलब्ध है, लेकिन उसका सत्यापित searchable transcript इस dataset में नहीं है।", "स्रोत सेट 6 मार्च 2025 तक consolidated है; 28 अगस्त 2026 का संशोधन शामिल नहीं है।"]
         : ["The searchable source text is from the English PDF; the Hindi PDF is available, but a verified searchable Hindi transcript is not included in this dataset.", "The source set is consolidated to 6 March 2025; the 28 August 2026 amendment is not included."]
       : [],
+    sitePlan,
     createdAt: new Date().toISOString(),
   });
 }
